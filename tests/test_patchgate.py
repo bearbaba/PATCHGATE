@@ -128,8 +128,9 @@ class PatchGateTests(unittest.TestCase):
         idx = self.h.open()
         self.assertEqual(self.h.gate.evaluate_release(idx), "BLOCK")
 
-    def test_range_validator_detects_disagreement(self):
-        self.h.advisory(ranges=[{"type": "SEMVER",
+    def test_ambiguous_range_validator_detects_disagreement(self):
+        # Unsupported ecosystem-defined ordering uses independently compared AI.
+        self.h.advisory(ranges=[{"type": "ECOSYSTEM",
                   "events": [{"introduced": "0"}, {"fixed": "4.17.12"}]}])
         self.h.prompts = ["AFFECTED", "NOT_AFFECTED"]
         idx = self.h.open()
