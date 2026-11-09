@@ -1,0 +1,19 @@
+name: GenVM lint
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install GenVM linter
+        run: python -m pip install genvm-linter
+      - name: Static GenVM checks
+        run: genvm-lint lint contracts/*.py
