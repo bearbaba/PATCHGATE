@@ -1,0 +1,38 @@
+{
+  "examples": [
+    {
+      "label": "blocked_affected",
+      "method": "open_release",
+      "args": [
+        "npm",
+        "lodash",
+        "4.17.11",
+        "[\"GHSA-jf85-cpcp-j695\"]"
+      ],
+      "expected": "BLOCK after live OSV assessment"
+    },
+    {
+      "label": "cleared_selected_advisory",
+      "method": "open_release",
+      "args": [
+        "npm",
+        "lodash",
+        "4.17.12",
+        "[\"GHSA-jf85-cpcp-j695\"]"
+      ],
+      "expected": "ALLOW only for this GHSA"
+    },
+    {
+      "label": "source_unavailable",
+      "method": "open_release",
+      "args": [
+        "npm",
+        "lodash",
+        "4.17.11",
+        "[\"OSV-2099-NOT-FOUND\"]"
+      ],
+      "expected": "REVIEW_REQUIRED or failed consensus; never ALLOW"
+    }
+  ],
+  "important": "Record returned IDs and finalized reads. Expected fixture outcomes are NOT real transaction proofs."
+}
