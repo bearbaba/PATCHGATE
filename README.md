@@ -27,7 +27,6 @@ PATCHGATE is a standalone Python Intelligent Contract for release decisions tied
 - [Standalone Intelligent Contract](contracts/patchgate.py)
 - [Mocked GenLayer VM unit tests](tests/test_patchgate.py) — 11 cases: role enforcement, missing source, duplicated advisories, adversarial validator mismatch, blocking, replay and revocation.
 - [GitHub Actions checks](https://github.com/bearbaba/PATCHGATE/actions/workflows/tests.yml)
-- [Studio deployment and signed acceptance instructions](docs/STUDIO_ACCEPTANCE.md)
 - [Ready-to-enter example call arguments](examples/cases.json)
 
 Local tests: python -m unittest discover -s tests -v
@@ -36,7 +35,7 @@ GenVM static and ABI checks: pip install genvm-linter ; genvm-lint check contrac
 
 ## Concrete OSV fixture
 
-Under [GHSA-jf85-cpcp-j695](https://osv.dev/vulnerability/GHSA-jf85-cpcp-j695), lodash before 4.17.12 is affected. Target examples for GenLayer Studio: npm / lodash / 4.17.11 => BLOCK; npm / lodash / 4.17.12 => ALLOW for **that advisory only**. These are acceptance expectations, not claims of on-chain execution.
+Under [GHSA-jf85-cpcp-j695](https://osv.dev/vulnerability/GHSA-jf85-cpcp-j695), lodash before 4.17.12 is affected. Illustrative cases: npm / lodash / 4.17.11 => BLOCK; npm / lodash / 4.17.12 => ALLOW for **that advisory only**. These are acceptance expectations, not claims of on-chain execution.
 
 ## Status
 
