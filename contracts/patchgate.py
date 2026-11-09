@@ -125,18 +125,18 @@ class PatchGate(gl.Contract):
                     body = gl.nondet.web.get(url).body
                     source = body.decode("utf-8") if isinstance(body, bytes) else str(body)
                     if len(source) > 120000:
-                        raise ValueError("oversized OSV response")
+                        raise gl.vm.UserError("oversized OSV response")
                     data = json.loads(source)
                     if type(data) is not dict or data.get("id") != advisory_id:
-                        raise ValueError("wrong advisory ID")
+                        raise gl.vm.UserError("wrong advisory ID")
                     affected = data.get("affected")
                     if type(affected) is not list:
-                        raise ValueError("missing affected list")
+                        raise gl.vm.UserError("missing affected list")
                     excerpt = {"id": data["id"], "modified": data.get("modified", ""),
                                "affected": affected}
                     snapshot = canon(excerpt)
                     if len(snapshot) > 30000:
-                        raise ValueError("oversized affected entries")
+                        raise gl.vm.UserError("oversized affected entries")
                     source_hash = digest(snapshot)
 
                     def decide_ranges(affected_json, eco, name, ver):
