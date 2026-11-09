@@ -40,9 +40,62 @@ def valid_advisories(raw: str) -> list:
     return ids
 
 
+
+def stable_semver(value: str):
+    """Numeric-only SemVer 2.0.0 core. Prereleases/build labels stay REVIEW_REQUIRED."""
+    if type(value) is not str:
+        return None
+    matched = re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", value)
+    return tuple(int(x) for x in matched.groups()) if matched else None
+
+
+def simple_npm_osv_range(range_record: dict, version: str) -> str:
+    """Interpret complete OSV SEMVER event intervals with exact inclusive/exclusive bounds.
+
+    Only applies to plain stable npm x.y.z versions. Unknown or malformed event
+    forms fail closed and are delegated to independently validated review.
+    """
+    target = stable_semver(version)
+    if target is None or type(range_record) is not dict or range_record.get("type") != "SEMVER":
+        return "REVIEW_REQUIRED"
+    events = range_record.get("events")
+    if type(events) is not list or not 1 <= len(events) <= 32:
+        return "REVIEW_REQUIRED"
+    start = None
+    previous_end = None
+    for event in events:
+        if type(event) is not dict or len(event) != 1:
+            return "REVIEW_REQUIRED"
+        key = next(iter(event))
+        value = event[key]
+        if key == "introduced":
+            boundary = (0, 0, 0) if value == "0" else stable_semver(value)
+            if boundary is None or start is not None:
+                return "REVIEW_REQUIRED"
+            if previous_end is not None and boundary < previous_end:
+                return "REVIEW_REQUIRED"
+            start = boundary
+        elif key in ("fixed", "last_affected", "limit"):
+            boundary = stable_semver(value)
+            if boundary is None or start is None or boundary < start:
+                return "REVIEW_REQUIRED"
+            if target >= start:
+                if key == "last_affected" and target <= boundary:
+                    return "AFFECTED"
+                if key in ("fixed", "limit") and target < boundary:
+                    return "AFFECTED"
+            previous_end = boundary
+            start = None
+        else:
+            return "REVIEW_REQUIRED"
+    if start is not None and target >= start:
+        return "AFFECTED"
+    return "NOT_AFFECTED"
+
+
 def status_for_record(record: dict, ecosystem: str, package: str,
                       version: str, model_decide) -> str:
-    """Interpret explicit versions deterministically; ranges need independent AI review."""
+    """Resolve explicit versions and safe npm SemVer ranges; others need consensus AI."""
     if type(record) is not dict or type(record.get("affected")) is not list:
         return "REVIEW_REQUIRED"
     affected = record["affected"]
@@ -69,7 +122,27 @@ def status_for_record(record: dict, ecosystem: str, package: str,
                for entry in matches):
             return "NOT_AFFECTED"
         return "REVIEW_REQUIRED"
-    # An OSV ecosystem range is not always ordinary SemVer. No naive lexical compare.
+    # Handle unambiguous npm stable SemVer intervals without LLM guesswork.
+    # OSV "fixed" and "limit" boundaries are EXCLUSIVE; "last_affected" is inclusive.
+    # All other ranges still require independent validator reasoning.
+    if ecosystem == "npm":
+        results = []
+        for entry in matches:
+            ranges = entry.get("ranges", [])
+            if type(ranges) is not list:
+                return "REVIEW_REQUIRED"
+            if not ranges and type(entry.get("versions")) is list and entry["versions"]:
+                results.append("NOT_AFFECTED")
+            elif not ranges:
+                results.append("REVIEW_REQUIRED")
+            else:
+                for rng in ranges:
+                    results.append(simple_npm_osv_range(rng, version))
+        if "AFFECTED" in results:
+            return "AFFECTED"
+        if results and all(x == "NOT_AFFECTED" for x in results):
+            return "NOT_AFFECTED"
+    # Avoid lexical version compares on non-npm or advanced ecosystem formats.
     return model_decide(canon(matches), ecosystem, package, version)
 
 
